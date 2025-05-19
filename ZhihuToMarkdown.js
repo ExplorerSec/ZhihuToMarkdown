@@ -4,7 +4,7 @@
 // @match       https://www.zhihu.com/question/**/answer/**
 // @match       https://zhuanlan.zhihu.com/p/**
 // @grant       none
-// @version     1.1
+// @version     1.2
 // @author      ExpZero
 // @description 2025/5/10 11:02:01
 // ==/UserScript==
@@ -59,6 +59,11 @@ function handleElement(e) {
     function handleTag_h3(e) {
         return "#### " + e.outerText
     }
+    // 处理 blockquote 块引用
+    function handleTag_blockquote(e){
+        return "> " + e.outerText
+    }
+
     // 处理 <ul>
     function handleTag_ul(e){
         let str = "" ;
@@ -86,6 +91,8 @@ function handleElement(e) {
         return handleTag_figure(e);
     }else if (tagName === 'ul'){
       return handleTag_ul(e);
+    }else if (tagName === 'blockquote'){
+      return handleTag_blockquote(e);
     }else if (tagName === 'div') {
         if (e.className === "RichText-LinkCardContainer") {
             return handleTag_class_urlLink(e);
@@ -119,9 +126,9 @@ function getContent() {
     var content = document.querySelector(".RichContent-inner"); // 问答
     if(!content){
       var content = document.querySelector(".Post-RichTextContainer"); // 专栏
-    }
-    var nodes = content.querySelector("div[options='[object Object]']").children;
 
+    }
+    var nodes = content.querySelector("[options='[object Object]']").children;
     var rebuild_content = "";
     for (let node of nodes) {
         rebuild_content += handleElement(node);
