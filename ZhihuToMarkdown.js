@@ -1,10 +1,12 @@
 // ==UserScript==
 // @name        Zhihu To Markdown
 // @namespace   Violentmonkey Scripts
+// @match       https://www.zhihu.com/
 // @match       https://www.zhihu.com/question/**/answer/**
 // @match       https://zhuanlan.zhihu.com/p/**
-// @grant       none
-// @version     1.2
+// @grant       GM_getClipboard
+// @grant       GM_setClipboard
+// @version     1.3
 // @author      ExpZero
 // @description 2025/5/10 11:02:01
 // ==/UserScript==
@@ -77,7 +79,6 @@ function handleElement(e) {
     function handleTag_hr(e) {
         return "------";
     }
-
 
     var tagName = e.tagName.toLowerCase();
     // 判断节点类型
@@ -153,9 +154,91 @@ function getTail() {
     return "[" + content_tail + "](" + href + ")";
 }
 
-let title = getTitle();
+function getCards(){
+  return document.querySelector('div[class="ListShortcut"]').querySelector('div[role="list"]');
+}
 
-let str = getContent();
-str += "来自：" + getAuthor() + "    " + getTail();
+function getCardContent(e) {
+    var content = e.querySelector(".RichContent-inner"); // 问答
+    if(!content){
+      var content = e.querySelector(".Post-RichTextContainer"); // 专栏
 
-console.log(title + "\n\n" + str);
+    }
+    var nodes = content.querySelector("[options='[object Object]']").children;
+    var rebuild_content = "";
+    for (let node of nodes) {
+        rebuild_content += handleElement(node);
+        rebuild_content += "\n\n"
+    }
+    return rebuild_content;
+}
+
+function rmCardSelf(card) {
+    card.parentNode.removeChild(card);
+}
+
+// 去除广告卡，输入是原始网页的卡列表
+function rmAdCards(cards_raw){
+    let ad_list = cards_raw.querySelectorAll('div[class="Card TopstoryItem TopstoryItem--advertCard TopstoryItem-isRecommend"]');
+    Array.from(ad_list).forEach((card)=>{rmCardSelf(card)});
+}
+
+function getNormalCardsArray(cards_raw){
+    return cards_raw.querySelectorAll('div[class="Card TopstoryItem TopstoryItem-isRecommend"]');
+}
+
+function genMdButton(fn){
+    let btn = document.createElement('div');
+    //btn.innerHTML = '<button type="button" class="Button Menu-item ShareMenu-button Button--plain"><svg width="17" height="17" viewBox="0 0 24 24" color="#9FADC7" fill="currentColor"><path fill-rule="evenodd" d="M5.327 18.883a3.005 3.005 0 0 1 0-4.25l2.608-2.607a.75.75 0 1 0-1.06-1.06l-2.608 2.607a4.505 4.505 0 0 0 6.37 6.37l2.608-2.607a.75.75 0 0 0-1.06-1.06l-2.608 2.607a3.005 3.005 0 0 1-4.25 0Zm5.428-11.799a.75.75 0 0 0 1.06 1.06L14.48 5.48a3.005 3.005 0 0 1 4.25 4.25l-2.665 2.665a.75.75 0 0 0 1.061 1.06l2.665-2.664a4.505 4.505 0 0 0-6.371-6.372l-2.665 2.665Zm5.323 2.117a.75.75 0 1 0-1.06-1.06l-7.072 7.07a.75.75 0 0 0 1.061 1.06l7.071-7.07Z" clip-rule="evenodd"></path></svg>Md</button>';
+    btn.innerHTML = '<button class="Button Menu-item ShareMenu-button Button--plain"><svg width="17" height="17" viewBox="0 0 24 24" color="#9FADC7" fill="currentColor"><path fill-rule="evenodd" d="M5.327 18.883a3.005 3.005 0 0 1 0-4.25l2.608-2.607a.75.75 0 1 0-1.06-1.06l-2.608 2.607a4.505 4.505 0 0 0 6.37 6.37l2.608-2.607a.75.75 0 0 0-1.06-1.06l-2.608 2.607a3.005 3.005 0 0 1-4.25 0Zm5.428-11.799a.75.75 0 0 0 1.06 1.06L14.48 5.48a3.005 3.005 0 0 1 4.25 4.25l-2.665 2.665a.75.75 0 0 0 1.061 1.06l2.665-2.664a4.505 4.505 0 0 0-6.371-6.372l-2.665 2.665Zm5.323 2.117a.75.75 0 1 0-1.06-1.06l-7.072 7.07a.75.75 0 0 0 1.061 1.06l7.071-7.07Z" clip-rule="evenodd"></path></svg>Md</button>';
+    btn.addEventListener('click',fn);
+    return btn;
+}
+
+function addBtnToCard(card,btn){
+    var bottom_bar = card.querySelector('div[class="ContentItem-actions"]');
+    if(bottom_bar==null){bottom_bar=card.querySelector('div[class="ContentItem-actions Sticky RichContent-actions is-bottom"]');};
+    if(bottom_bar==null){bottom_bar=card.querySelector('div[class="ContentItem-actions Sticky RichContent-actions is-fixed is-bottom"]');};
+    if(bottom_bar){
+      const bottom_bar_more = bottom_bar.querySelector('div[class="Popover ContentItem-action"]');
+      // const bottom_bar_share = bottom_bar.querySelector('div[class="Popover ShareMenu ContentItem-action"]');
+      if(bottom_bar_more){
+        bottom_bar.insertBefore(btn,bottom_bar_more);
+      }
+    }else{
+      // console.log('----> Fail to locate bottom_bar: ');
+    }
+}
+
+
+function pcssCard(){
+    let cards_raw = getCards();
+    // 去除广告卡
+    rmAdCards(cards_raw);
+    // 增加转Markdown按钮
+    let cards = getNormalCardsArray(cards_raw);
+    cards.forEach(
+      (card)=>{
+        if(card.querySelector('div[id="md-btn"]')==null){
+            let btn = genMdButton(function(){
+                let node = this.parentNode.parentNode.parentNode.parentNode;
+                let content = getCardContent(node);
+                GM_setClipboard(content.toString(),"text");
+            });
+            btn['id'] = "md-btn";
+            addBtnToCard(card,btn);
+        }
+      });
+}
+
+
+
+if (window.location.pathname === '/'){
+  setInterval(pcssCard,1000);
+}else{
+  let title = getTitle();
+  let str = getContent();
+  str += "来自：" + getAuthor() + "    " + getTail();
+  console.log(title + "\n\n" + str);
+}
+
