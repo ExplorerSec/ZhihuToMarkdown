@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name        Zhihu To Markdown
 // @namespace   Violentmonkey Scripts
+// @match       https://www.zhihu.com/follow
 // @match       https://www.zhihu.com/
 // @match       https://www.zhihu.com/question/**/answer/**
 // @match       https://zhuanlan.zhihu.com/p/**
 // @grant       GM_getClipboard
 // @grant       GM_setClipboard
-// @version     1.3
+// @version     1.4
 // @author      ExpZero
 // @description 2025/5/10 11:02:01
 // ==/UserScript==
@@ -46,6 +47,7 @@ function handleElement(e) {
     function handleTag_class_highlight(e) {
         // 未实现
         // 例如 https://zhuanlan.zhihu.com/p/634796906
+        // https://www.zhihu.com/question/21428687/answer/2028263808360096794
     }
     // 未实现
     // 表格
@@ -231,7 +233,40 @@ function pcssCard(){
       });
 }
 
+// 广告： class="Card TopstoryItem TopstoryItem--advertCard TopstoryItem-isFollow"
 
+
+// 添加一个一键复制的按钮
+function addButton(str_content){
+  // 创建按钮
+    const btn = document.createElement('button');
+    btn.innerText = '一键复制';
+    // 独立样式，隔离原网页
+    Object.assign(btn.style, {
+        position: 'fixed',
+        right: '20px',
+        top: '50%',
+        transform: 'translateY(-50%)',
+        zIndex: '999999',
+        padding: '10px 16px',
+        border: 'none',
+        borderRadius: '6px',
+        background: '#409eff',
+        color: '#fff',
+        fontSize: '14px',
+        cursor: 'pointer',
+        boxShadow: '0 2px 8px #0003',
+        userSelect: 'none'
+    });
+  // 设定按钮的响应函数
+  btn.onclick = function(){
+     navigator.clipboard.writeText(str_content)
+       .then(() => {alert("复制成功！");})
+       .catch(err => {alert("复制失败");});
+  };
+  // 将按钮放到指定位置
+  document.body.appendChild(btn);
+}
 
 if (window.location.pathname === '/'){
   setInterval(pcssCard,1000);
@@ -239,6 +274,12 @@ if (window.location.pathname === '/'){
   let title = getTitle();
   let str = getContent();
   str += "来自：" + getAuthor() + "    " + getTail();
-  console.log(title + "\n\n" + str);
+  let content_full = title + "\n\n" + str;
+  console.log(content_full);
+  addButton(content_full);
 }
+
+
+
+
 
