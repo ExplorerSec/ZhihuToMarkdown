@@ -14,7 +14,8 @@ When you open a link like `https://www.zhihu.com/question/**/answer/**`, that is
 - 1.1 Support Zhihu zhuanlan
 - 1.2 Block referencing support added and bugs fixed. 
 - 1.3 Support Zhihu homepage with one-click copy feature, please note to expand all before use.
-
+- 1.4 Add quick copy button.
+- 1.5 Support "table to markdown". 
 
 
 # 知乎转Markdown
@@ -30,9 +31,8 @@ When you open a link like `https://www.zhihu.com/question/**/answer/**`, that is
 ### 版本特性
 
 - 1.0 创建版本
-
 - 1.1 支持知乎专栏
-
 - 1.2 支持块引用，修复问答 bug
-
 - 1.3 支持知乎首页，一键复制内容，注意展开全部后再使用
+- 1.4 添加一键复制按钮
+- 1.5 支持表格格式的解析
